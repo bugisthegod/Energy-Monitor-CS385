@@ -1,11 +1,13 @@
 import logo from './logo.svg';
 import './App.css';
 
-function App() {
-
+function home() {
+    function homedetails(){
+        
+    }
   return (
     <div className="App">
-      <header className="this is my page">
+      <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
           Edit <code>src/App.js</code> and save to reload.
@@ -23,4 +25,4 @@ function App() {
   );
 }
 
-export default App;
+export default home;
