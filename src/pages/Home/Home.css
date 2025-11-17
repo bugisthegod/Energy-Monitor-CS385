@@ -1,0 +1,167 @@
+/* Home Page Styles */
+.home-page {
+  min-height: 100vh;
+  background: #f8f9fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Navigation Bar */
+.navbar {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  padding: 35px 20px 15px;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.nav-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.nav-tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+
+.nav-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-tab.active {
+  background: rgba(255,255,255,0.3);
+  font-weight: bold;
+}
+
+.nav-tab:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Content Area */
+.content {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Total Power Display */
+.total-power {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.total-power-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.total-power-value {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.total-power-unit {
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+/* Device Cards */
+.device-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.device-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.device-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.device-info {
+  flex: 1;
+}
+
+.device-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.device-type {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-bottom: 5px;
+}
+
+.device-power {
+  font-size: 20px;
+  font-weight: bold;
+  color: #e74c3c;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .content {
+    padding: 15px;
+  }
+
+  .total-power-value {
+    font-size: 36px;
+  }
+
+  .device-card {
+    padding: 15px;
+  }
+
+  .device-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .device-power {
+    font-size: 16px;
+  }
+}
