@@ -1,34 +1,37 @@
-import React from 'react';
-import './Home.css';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import "./Home.css";
 
 function Home() {
+  const location = useLocation();
+
   // Sample data - will be replaced with database calls later
   const totalPower = 2547;
   const topDevices = [
     {
       id: 1,
-      name: 'Air Conditioner',
-      type: 'Cooling',
+      name: "Air Conditioner",
+      type: "Cooling",
       power: 1250,
-      icon: '🌡️',
-      iconBgColor: '#ffe5e5'
+      icon: "🌡️",
+      iconBgColor: "#ffe5e5",
     },
     {
       id: 2,
-      name: 'Refrigerator',
-      type: 'Kitchen',
+      name: "Refrigerator",
+      type: "Kitchen",
       power: 680,
-      icon: '🧊',
-      iconBgColor: '#fff4e5'
+      icon: "🧊",
+      iconBgColor: "#fff4e5",
     },
     {
       id: 3,
-      name: 'Desktop Computer',
-      type: 'Office',
+      name: "Desktop Computer",
+      type: "Office",
       power: 420,
-      icon: '💻',
-      iconBgColor: '#e5f5ff'
-    }
+      icon: "💻",
+      iconBgColor: "#e5f5ff",
+    },
   ];
 
   return (
@@ -36,9 +39,28 @@ function Home() {
       <div className="navbar">
         <div className="nav-title">⚡ Energy Monitor</div>
         <div className="nav-tabs">
-          <div className="nav-tab active">Home</div>
-          <div className="nav-tab">Devices</div>
-          <div className="nav-tab">Stats</div>
+          <Link
+            to="/"
+            className={`nav-tab${location.pathname === "/" ? " active" : ""}`}
+          >
+            Home
+          </Link>
+          <Link
+            to="/devices"
+            className={`nav-tab ${
+              location.pathname === "/devices" ? "active" : ""
+            }`}
+          >
+            Devices
+          </Link>
+          <Link
+            to="/status"
+            className={`nav-tab ${
+              location.pathname === "/status" ? "active" : ""
+            }`}
+          >
+            Stats
+          </Link>
         </div>
       </div>
 
