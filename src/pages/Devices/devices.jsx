@@ -1,9 +1,24 @@
 import React from "react";
+import { Link, useLocation } from "react-router-dom";
 import "./Devices.css";
+import "./deviceList.js"
 
 // lec 2-3 const myDevices = [
-//   { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH },
+//   
 // ];
+
+export const deviceList = [
+    { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH:0 },
+    { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH:0 },
+]
+ const deviceListJSX = deviceList.map((d, index) => (
+          < p key = { index}>
+          <b>{d.name}</b> {d.location},  { d.kwH + "kwH"}
+          <button onClick={delButton}>Delete</button> //to fix
+          </p>
+        ));
+
+
 
 export default function Devices() {
   return (
@@ -21,6 +36,10 @@ export default function Devices() {
         </div>
       </div>
 
+
+
+
+
       <div class="add-device">
         <h2>Add New Device</h2>
         <h2>Device Name</h2>
@@ -28,7 +47,11 @@ export default function Devices() {
 
         <button> Add Device </button>
         <h2> </h2>
-        <h2> My Devices </h2>
+        <h2> My Devices</h2>
+          <>{deviceListJSX}</>;
+            
+       
+
       </div>
     </div>
   );
