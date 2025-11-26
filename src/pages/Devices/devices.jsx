@@ -1,25 +1,67 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import "./Devices.css";
-import "./deviceList.js"
+import "./devices.css";
+
+import{useState} from 'react';  
+
+let nextId = 3;  //starting id for new devices
+
+
+// import {deviceList} from "./deviceList.js"
 
 // lec 2-3 const myDevices = [
 //   
 // ];
 
-export const deviceList = [
+// original full device list
+const deviceList = [
     { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH:0 },
     { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH:0 },
-]
+];
+
+
+
+//to store user inputs for new device
+const [newDeviceName, setNewDeviceName] = useState(""); 
+const[newDeviceType, setNewDeviceType] = useState(""); 
+
+function setDevices()) {
+ 
+//map through deviceList to create JSX elements
  const deviceListJSX = deviceList.map((d, index) => (
           < p key = { index}>
           <b>{d.name}</b> {d.location},  { d.kwH + "kwH"}
-          <button onClick={delButton}>Delete</button> //to fix
-          </p>
+          <button onClick={
+            setDevices(
+              device.filter((d) => 
+                d.id !== device.id
+            )
+          );
+        }>
+        
+              
+        Delete
+        </button> 
+          
         ));
 
+function handleAddDevice() {
+  const newDevice = {
+    id: nextId++,
+    name: newDeviceName,
+    type: newDeviceType,
+    location: "Unknown",
+    kwH: 0,
+  };
 
-
+  //add new device to deviceList
+  setDeviceList([...deviceList, newDevice]);
+  
+  //clear input fields
+  setNewDeviceName("");
+  setNewDeviceType("");
+}
+           
 export default function Devices() {
   return (
     <div className="devices">
@@ -43,9 +85,25 @@ export default function Devices() {
       <div class="add-device">
         <h2>Add New Device</h2>
         <h2>Device Name</h2>
-        <h2>Device Type</h2>
+        < input
+          type="text"
+          placeholder="Device Name"
+          value={newDeviceName}
+          onChange={(e) => setNewDeviceName(e.target.value)}
+          />
 
-        <button> Add Device </button>
+          <h2>Device Type</h2>
+          < input
+          type="text"
+          placeholder="Device Type"
+          value={newDeviceType}
+          onChange={(e) => setNewDeviceType(e.target.value)}
+          />
+
+      
+        <button onClick={()=> handleAddDevice}> Add Device </button>
+
+
         <h2> </h2>
         <h2> My Devices</h2>
           <>{deviceListJSX}</>;
