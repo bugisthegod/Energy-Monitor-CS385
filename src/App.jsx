@@ -33,6 +33,10 @@ function App() {
         <Routes>
           <Route path='/login' element={<Login />} />
           <Route 
+            path='/' 
+            element={currentUser ? <Home /> : <Navigate to="/login" />} 
+          />
+          <Route 
             path='/home' 
             element={currentUser ? <Home /> : <Navigate to="/login" />} 
           />

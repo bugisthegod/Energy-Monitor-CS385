@@ -46,6 +46,16 @@
   background: rgba(255,255,255,0.25);
 }
 
+.logout-btn {
+  border: none;
+  font-family: inherit;
+  background: rgba(231, 76, 60, 0.9) !important;
+}
+
+.logout-btn:hover {
+  background: rgba(192, 57, 43, 1) !important;
+}
+
 /* Content Area */
 .content {
   padding: 20px;
