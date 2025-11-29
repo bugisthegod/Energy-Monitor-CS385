@@ -14,7 +14,7 @@ function Login() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       console.log("Login successful!");
-      navigate("/home");
+      navigate("/");
     } catch (err) {
       setError("Wrong username/password! Please try again!");
     }

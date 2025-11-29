@@ -1,9 +1,17 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { auth } from "../../fbconfig";
+import { signOut } from "firebase/auth";
 import "./Home.css";
 
 function Home() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    signOut(auth);
+    navigate('/login');
+  };
 
   // Sample data - will be replaced with database calls later
   const totalPower = 2547;
@@ -61,6 +69,9 @@ function Home() {
           >
             Stats
           </Link>
+          <button onClick={handleLogout} className="nav-tab logout-btn">
+            Logout
+          </button>
         </div>
       </div>
 
