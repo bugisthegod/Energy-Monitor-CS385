@@ -1,46 +1,83 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { auth } from "../../fbconfig";
+import { auth, db } from "../../fbconfig";
 import { signOut } from "firebase/auth";
+import { collection, getDocs } from "firebase/firestore";
 import "./Home.css";
 
 function Home() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [devices, setDevices] = useState([]);
+  const [totalPower, setTotalPower] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch devices from Firebase
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "devices"));
+      const devicesData = [];
+
+      querySnapshot.forEach((doc) => {
+        devicesData.push({ id: doc.id, ...doc.data() });
+      });
+
+      setDevices(devicesData);
+
+      // Calculate total power from all devices
+      const total = devicesData.reduce((sum, device) => sum + (device.currentPower || 0), 0);
+      setTotalPower(total);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching devices: ", error);
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     signOut(auth);
     navigate('/login');
   };
 
-  // Sample data - will be replaced with database calls later
-  const totalPower = 2547;
-  const topDevices = [
-    {
-      id: 1,
-      name: "Air Conditioner",
-      type: "Cooling",
-      power: 1250,
-      icon: "🌡️",
-      iconBgColor: "#ffe5e5",
-    },
-    {
-      id: 2,
-      name: "Refrigerator",
-      type: "Kitchen",
-      power: 680,
-      icon: "🧊",
-      iconBgColor: "#fff4e5",
-    },
-    {
-      id: 3,
-      name: "Desktop Computer",
-      type: "Office",
-      power: 420,
-      icon: "💻",
-      iconBgColor: "#e5f5ff",
-    },
-  ];
+  // Icon mapping for device types
+  const getDeviceIcon = (type) => {
+    const icons = {
+      air_conditioner: "🌡️",
+      refrigerator: "🧊",
+      tv: "📺",
+      washing_machine: "🧺",
+      lighting: "💡",
+      heater: "🔥",
+      microwave: "🍴",
+      computer: "💻",
+      dishwasher: "🍽️",
+    };
+    return icons[type] || "⚡";
+  };
+
+  const getIconBgColor = (type) => {
+    const colors = {
+      air_conditioner: "#ffe5e5",
+      refrigerator: "#fff4e5",
+      tv: "#e5f0ff",
+      washing_machine: "#e5f5ff",
+      lighting: "#fffde5",
+      heater: "#ffe5e5",
+      microwave: "#fff4e5",
+      computer: "#e5f5ff",
+      dishwasher: "#e5fff4",
+    };
+    return colors[type] || "#f0f0f0";
+  };
+
+  if (loading) {
+    return <div style={{ padding: "50px", textAlign: "center" }}>Loading devices...</div>;
+  }
 
   return (
     <div className="home-page">
@@ -79,26 +116,42 @@ function Home() {
         <div className="total-power">
           <div className="total-power-label">Total Power Consumption</div>
           <div className="total-power-value">{totalPower.toLocaleString()}</div>
-          <div className="total-power-unit">kWh this month</div>
+          <div className="total-power-unit">Watts (W)</div>
         </div>
 
-        <div className="section-title">🔝 Top 3 Devices</div>
+        <div className="section-title">⚡ All Devices ({devices.length})</div>
 
-        {topDevices.map((device) => (
-          <div key={device.id} className="device-card">
-            <div
-              className="device-icon"
-              style={{ background: device.iconBgColor }}
-            >
-              {device.icon}
-            </div>
-            <div className="device-info">
-              <div className="device-name">{device.name}</div>
-              <div className="device-type">{device.type}</div>
-            </div>
-            <div className="device-power">{device.power} kWh</div>
+        {devices.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "20px", color: "#7f8c8d" }}>
+            No devices found. Add some devices to Firebase first!
           </div>
-        ))}
+        ) : (
+          devices
+            .sort((a, b) => b.currentPower - a.currentPower)
+            .map((device) => (
+              <div key={device.id} className="device-card">
+                <div
+                  className="device-icon"
+                  style={{ background: getIconBgColor(device.type) }}
+                >
+                  {getDeviceIcon(device.type)}
+                </div>
+                <div className="device-info">
+                  <div className="device-name">{device.name}</div>
+                  <div className="device-type">{device.type.replace(/_/g, " ")}</div>
+                  <div className="device-status" style={{
+                    fontSize: "12px",
+                    color: device.powerStatus === "on" ? "#27ae60" : "#e74c3c",
+                    fontWeight: "bold",
+                    marginTop: "5px"
+                  }}>
+                    {device.powerStatus?.toUpperCase()}
+                  </div>
+                </div>
+                <div className="device-power">{device.currentPower} W</div>
+              </div>
+            ))
+        )}
       </div>
     </div>
   );
