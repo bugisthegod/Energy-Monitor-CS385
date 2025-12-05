@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Status.css";
+import { db } from "../../fbconfig";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
-// 转换 timestamp
+// Convert timestamp to the DD/MM/YY HH:MM:SS string
 function formatTimestamp(ts) {
-  const d = new Date(ts);
+  const d = ts instanceof Date ? ts : ts.toDate?.() ?? new Date(ts);
   const pad = (n) => n.toString().padStart(2, "0");
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${String(
     d.getFullYear()
@@ -13,108 +15,87 @@ function formatTimestamp(ts) {
   )}`;
 }
 
-/* ---------------------------- 父组件 ---------------------------- */
+// Convert timestamp to the YYYY-MM-DD string
+function formatDate(ts) {
+  const d = ts instanceof Date ? ts : ts.toDate?.() ?? new Date(ts);
+  const pad = (n) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/* ---------------------------- Parent component ---------------------------- */
 function Status() {
+  const location = useLocation();
   const [devices, setDevices] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedDate, setSelectedDate] = useState("2025-01-01");
+  const [selectedDate, setSelectedDate] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dates, setDates] = useState([]);
 
-  // 新增：选中设备 → 打开详情
   const [selectedDevice, setSelectedDevice] = useState(null);
 
+  // ------------------ Get the date list 获取日期列表 ------------------
   useEffect(() => {
-    async function load() {
+    async function fetchDates() {
       setLoading(true);
       try {
-        const res = await fetch(
-          `http://localhost:3001/devices?date=${selectedDate}`
+        const devicesRef = collection(db, "devices");
+        const snapshot = await getDocs(devicesRef);
+
+        const data = snapshot.docs.map((doc) => doc.data());
+
+        const dateSet = new Set(
+          data.map((device) => formatDate(device.lastUpdated))
         );
-        const data = await res.json();
-        setDevices(data);
+        const sortedDates = Array.from(dateSet).sort();
+        setDates(sortedDates);
+
+        if (sortedDates.length > 0) setSelectedDate(sortedDates[0]);
       } catch (error) {
-        console.log("Server offline -> using fallback.");
-
-        const fallback = {
-          "2025-01-01": [
-            {
-              deviceId: "dev001",
-              name: "Air Conditioner",
-              type: "air_conditioner",
-              powerStatus: "on",
-              currentPower: 2450,
-              lastUpdated: "2025-01-01T08:32:15Z",
-            },
-            {
-              deviceId: "dev002",
-              name: "Refrigerator",
-              type: "refrigerator",
-              powerStatus: "on",
-              currentPower: 1450,
-              lastUpdated: "2025-01-01T10:20:00Z",
-            },
-            {
-              deviceId: "dev003",
-              name: "Desktop",
-              type: "desktop",
-              powerStatus: "off",
-              currentPower: 450,
-              lastUpdated: "2025-01-01T18:54:11Z",
-            },
-          ],
-          "2025-01-02": [
-            {
-              deviceId: "dev001",
-              name: "Air Conditioner",
-              type: "air_conditioner",
-              powerStatus: "off",
-              currentPower: 2450,
-              lastUpdated: "2025-01-02T09:12:08Z",
-            },
-            {
-              deviceId: "dev002",
-              name: "Refrigerator",
-              type: "refrigerator",
-              powerStatus: "on",
-              currentPower: 1450,
-              lastUpdated: "2025-01-02T11:45:55Z",
-            },
-            {
-              deviceId: "dev003",
-              name: "Desktop",
-              type: "desktop",
-              powerStatus: "on",
-              currentPower: 450,
-              lastUpdated: "2025-01-02T14:18:20Z",
-            },
-          ],
-        };
-
-        setDevices(fallback[selectedDate] || []);
+        console.error("Error fetching dates:", error);
       }
       setLoading(false);
     }
 
-    load();
+    fetchDates();
+  }, []);
+
+  // ------------------Dropdown the device according to the selected date 根据选中日期拉取设备 ------------------
+  useEffect(() => {
+    if (!selectedDate) return;
+    async function fetchDevicesByDate() {
+      setLoading(true);
+      try {
+        const devicesRef = collection(db, "devices");
+        // Firestore Query: Only obtain devices on the selected date; Firestore 查询：只获取选中日期的设备
+        const snapshot = await getDocs(devicesRef);
+        const data = snapshot.docs
+          .map((doc) => ({ deviceId: doc.id, ...doc.data() }))
+          .filter((device) => formatDate(device.lastUpdated) === selectedDate);
+        setDevices(data);
+      } catch (error) {
+        console.error("Error fetching devices:", error);
+        setDevices([]);
+      }
+      setLoading(false);
+    }
+
+    fetchDevicesByDate();
   }, [selectedDate]);
 
+  // ------------------Status & Search Filters 状态 & 搜索过滤 ------------------
   const filtered = devices
-    .filter((device) => {
-      const statusMatch =
-        statusFilter === "all" ? true : device.powerStatus === statusFilter;
-      const searchMatch = device.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
-      return statusMatch && searchMatch;
-    })
+    .filter((device) =>
+      statusFilter === "all" ? true : device.powerStatus === statusFilter
+    )
+    .filter((device) =>
+      device.name.toLowerCase().includes(search.toLowerCase())
+    )
     .sort((a, b) => a.name.localeCompare(b.name));
-
-  const dates = ["2025-01-01", "2025-01-02"];
 
   return (
     <div className="home-page">
-      {/* 导航栏 */}
+      {/* Navigation Bar 导航栏 */}
       <div className="navbar">
         <div className="nav-title">⚡ Energy Monitor</div>
         <div className="nav-tabs">
@@ -124,7 +105,6 @@ function Status() {
           >
             Home
           </Link>
-
           <Link
             to="/devices"
             className={`nav-tab ${
@@ -133,7 +113,6 @@ function Status() {
           >
             Devices
           </Link>
-
           <Link
             to="/status"
             className={`nav-tab ${
@@ -145,7 +124,7 @@ function Status() {
         </div>
       </div>
 
-      {/* 内容 */}
+      {/* Content 内容 */}
       <div style={{ padding: "20px" }}>
         <h2
           style={{ fontSize: "24px", fontWeight: "700", marginBottom: "20px" }}
@@ -153,7 +132,7 @@ function Status() {
           Device Status
         </h2>
 
-        {/* 搜索框 */}
+        {/* Search Box 搜索框 */}
         <input
           type="text"
           placeholder="Search devices..."
@@ -169,7 +148,7 @@ function Status() {
           }}
         />
 
-        {/* 状态筛选 */}
+        {/* Status filter rule  状态筛选 */}
         <div style={{ marginBottom: "15px" }}>
           {["all", "on", "off"].map((option) => (
             <button
@@ -193,7 +172,7 @@ function Status() {
           ))}
         </div>
 
-        {/* 日期选择 */}
+        {/* Date selection 日期选择 */}
         <select
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
@@ -212,16 +191,16 @@ function Status() {
           ))}
         </select>
 
-        {/* 加载中 */}
+        {/* Loading 加载中 */}
         {loading && <p>Loading...</p>}
 
-        {/* 设备列表 */}
+        {/* Device List 设备列表 */}
         {!loading &&
           filtered.map((device) => (
             <DeviceCard
               key={device.deviceId}
               device={device}
-              onClick={setSelectedDevice} // 子传父
+              onClick={setSelectedDevice}
             />
           ))}
 
@@ -232,7 +211,7 @@ function Status() {
         )}
       </div>
 
-      {/* -------------------- 设备详情面板 -------------------- */}
+      {/* Equipment/Device Details Panel设备详情面板 */}
       {selectedDevice && (
         <div
           style={{
@@ -249,11 +228,9 @@ function Status() {
           }}
         >
           <h3 style={{ margin: 0, fontSize: "20px" }}>{selectedDevice.name}</h3>
-
           <p style={{ marginTop: "10px", color: "#555" }}>
             <strong>Type:</strong> {selectedDevice.type}
           </p>
-
           <p style={{ color: "#555" }}>
             <strong>Status:</strong>{" "}
             <span
@@ -266,16 +243,13 @@ function Status() {
               {selectedDevice.powerStatus}
             </span>
           </p>
-
           <p style={{ color: "#555" }}>
             <strong>Current Power:</strong> {selectedDevice.currentPower} W
           </p>
-
           <p style={{ color: "#555" }}>
             <strong>Last Updated:</strong>{" "}
             {formatTimestamp(selectedDevice.lastUpdated)}
           </p>
-
           <button
             onClick={() => setSelectedDevice(null)}
             style={{
@@ -298,7 +272,7 @@ function Status() {
   );
 }
 
-/* ----------------------- 子组件：DeviceCard ----------------------- */
+/* ----------------------- 子组件 Child Component ：DeviceCard ----------------------- */
 function DeviceCard({ device, onClick }) {
   return (
     <div
@@ -318,7 +292,6 @@ function DeviceCard({ device, onClick }) {
         <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>
           {device.name}
         </h3>
-
         <div style={{ marginTop: "6px", fontSize: "14px", color: "#666" }}>
           {formatTimestamp(device.lastUpdated)}
           <span

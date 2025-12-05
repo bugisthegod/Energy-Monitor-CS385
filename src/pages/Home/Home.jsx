@@ -29,7 +29,10 @@ function Home() {
       setDevices(devicesData);
 
       // Calculate total power from all devices
-      const total = devicesData.reduce((sum, device) => sum + (device.currentPower || 0), 0);
+      const total = devicesData.reduce(
+        (sum, device) => sum + (device.currentPower || 0),
+        0
+      );
       setTotalPower(total);
 
       setLoading(false);
@@ -41,7 +44,7 @@ function Home() {
 
   const handleLogout = () => {
     signOut(auth);
-    navigate('/login');
+    navigate("/login");
   };
 
   // Icon mapping for device types
@@ -76,7 +79,11 @@ function Home() {
   };
 
   if (loading) {
-    return <div style={{ padding: "50px", textAlign: "center" }}>Loading devices...</div>;
+    return (
+      <div style={{ padding: "50px", textAlign: "center" }}>
+        Loading devices...
+      </div>
+    );
   }
 
   return (
@@ -104,7 +111,7 @@ function Home() {
               location.pathname === "/status" ? "active" : ""
             }`}
           >
-            Stats
+            Status
           </Link>
           <button onClick={handleLogout} className="nav-tab logout-btn">
             Logout
@@ -122,7 +129,9 @@ function Home() {
         <div className="section-title">⚡ All Devices ({devices.length})</div>
 
         {devices.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "20px", color: "#7f8c8d" }}>
+          <div
+            style={{ textAlign: "center", padding: "20px", color: "#7f8c8d" }}
+          >
             No devices found. Add some devices to Firebase first!
           </div>
         ) : (
@@ -138,13 +147,19 @@ function Home() {
                 </div>
                 <div className="device-info">
                   <div className="device-name">{device.name}</div>
-                  <div className="device-type">{device.type.replace(/_/g, " ")}</div>
-                  <div className="device-status" style={{
-                    fontSize: "12px",
-                    color: device.powerStatus === "on" ? "#27ae60" : "#e74c3c",
-                    fontWeight: "bold",
-                    marginTop: "5px"
-                  }}>
+                  <div className="device-type">
+                    {device.type.replace(/_/g, " ")}
+                  </div>
+                  <div
+                    className="device-status"
+                    style={{
+                      fontSize: "12px",
+                      color:
+                        device.powerStatus === "on" ? "#27ae60" : "#e74c3c",
+                      fontWeight: "bold",
+                      marginTop: "5px",
+                    }}
+                  >
                     {device.powerStatus?.toUpperCase()}
                   </div>
                 </div>
