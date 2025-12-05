@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Status.css";
 import { db } from "../../fbconfig";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
-// Convert timestamp to the DD/MM/YY HH:MM:SS string
+// Convert timestamp to DD/MM/YY HH:MM:SS
 function formatTimestamp(ts) {
   const d = ts instanceof Date ? ts : ts.toDate?.() ?? new Date(ts);
   const pad = (n) => n.toString().padStart(2, "0");
@@ -15,14 +15,13 @@ function formatTimestamp(ts) {
   )}`;
 }
 
-// Convert timestamp to the YYYY-MM-DD string
+// Convert timestamp to YYYY-MM-DD
 function formatDate(ts) {
   const d = ts instanceof Date ? ts : ts.toDate?.() ?? new Date(ts);
   const pad = (n) => n.toString().padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/* ---------------------------- Parent component ---------------------------- */
 function Status() {
   const location = useLocation();
   const [devices, setDevices] = useState([]);
@@ -31,43 +30,36 @@ function Status() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [dates, setDates] = useState([]);
-
   const [selectedDevice, setSelectedDevice] = useState(null);
 
-  // ------------------ Get the date list 获取日期列表 ------------------
+  // ------------------ Fetch unique dates ------------------
   useEffect(() => {
     async function fetchDates() {
       setLoading(true);
       try {
         const devicesRef = collection(db, "devices");
         const snapshot = await getDocs(devicesRef);
-
         const data = snapshot.docs.map((doc) => doc.data());
-
         const dateSet = new Set(
           data.map((device) => formatDate(device.lastUpdated))
         );
         const sortedDates = Array.from(dateSet).sort();
         setDates(sortedDates);
-
-        if (sortedDates.length > 0) setSelectedDate(sortedDates[0]);
       } catch (error) {
         console.error("Error fetching dates:", error);
       }
       setLoading(false);
     }
-
     fetchDates();
   }, []);
 
-  // ------------------Dropdown the device according to the selected date 根据选中日期拉取设备 ------------------
+  // ------------------ Fetch devices for selected date ------------------
   useEffect(() => {
     if (!selectedDate) return;
     async function fetchDevicesByDate() {
       setLoading(true);
       try {
         const devicesRef = collection(db, "devices");
-        // Firestore Query: Only obtain devices on the selected date; Firestore 查询：只获取选中日期的设备
         const snapshot = await getDocs(devicesRef);
         const data = snapshot.docs
           .map((doc) => ({ deviceId: doc.id, ...doc.data() }))
@@ -79,11 +71,10 @@ function Status() {
       }
       setLoading(false);
     }
-
     fetchDevicesByDate();
   }, [selectedDate]);
 
-  // ------------------Status & Search Filters 状态 & 搜索过滤 ------------------
+  // ------------------ Status & Search Filtering ------------------
   const filtered = devices
     .filter((device) =>
       statusFilter === "all" ? true : device.powerStatus === statusFilter
@@ -93,9 +84,16 @@ function Status() {
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // ------------------ Count devices per status ------------------
+  const countStatus = {
+    all: devices.length,
+    on: devices.filter((d) => d.powerStatus === "on").length,
+    off: devices.filter((d) => d.powerStatus === "off").length,
+  };
+
   return (
     <div className="home-page">
-      {/* Navigation Bar 导航栏 */}
+      {/* Navigation Bar */}
       <div className="navbar">
         <div className="nav-title">⚡ Energy Monitor</div>
         <div className="nav-tabs">
@@ -124,7 +122,7 @@ function Status() {
         </div>
       </div>
 
-      {/* Content 内容 */}
+      {/* Content */}
       <div style={{ padding: "20px" }}>
         <h2
           style={{ fontSize: "24px", fontWeight: "700", marginBottom: "20px" }}
@@ -132,7 +130,7 @@ function Status() {
           Device Status
         </h2>
 
-        {/* Search Box 搜索框 */}
+        {/* Search Box */}
         <input
           type="text"
           placeholder="Search devices..."
@@ -148,31 +146,7 @@ function Status() {
           }}
         />
 
-        {/* Status filter rule  状态筛选 */}
-        <div style={{ marginBottom: "15px" }}>
-          {["all", "on", "off"].map((option) => (
-            <button
-              key={option}
-              onClick={() => setStatusFilter(option)}
-              style={{
-                marginRight: "10px",
-                padding: "8px 16px",
-                borderRadius: "20px",
-                border: "none",
-                cursor: "pointer",
-                backgroundColor:
-                  statusFilter === option ? "#4caf50" : "#e0e0e0",
-                color: statusFilter === option ? "#fff" : "#000",
-                fontSize: "15px",
-                fontWeight: "600",
-              }}
-            >
-              {option.toUpperCase()}
-            </button>
-          ))}
-        </div>
-
-        {/* Date selection 日期选择 */}
+        {/* Date Selection */}
         <select
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
@@ -184,6 +158,7 @@ function Status() {
             fontSize: "16px",
           }}
         >
+          <option value="">Please select a date</option>
           {dates.map((date) => (
             <option key={date} value={date}>
               {date}
@@ -191,27 +166,72 @@ function Status() {
           ))}
         </select>
 
-        {/* Loading 加载中 */}
-        {loading && <p>Loading...</p>}
+        {/* Only show status counts and buttons if a date is selected */}
+        {selectedDate && (
+          <>
+            {/* Status Counts Display & Buttons */}
+            <div style={{ marginBottom: "15px" }}>
+              <div
+                style={{
+                  marginBottom: "8px",
+                  fontWeight: "600",
+                  color: "#555",
+                }}
+              >
+                Device Count: All ({countStatus.all}) | On ({countStatus.on}) |
+                Off ({countStatus.off})
+              </div>
+              {["all", "on", "off"].map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setStatusFilter(option)}
+                  style={{
+                    marginRight: "10px",
+                    padding: "8px 16px",
+                    borderRadius: "20px",
+                    border: "none",
+                    cursor: "pointer",
+                    backgroundColor:
+                      statusFilter === option ? "#4caf50" : "#e0e0e0",
+                    color: statusFilter === option ? "#fff" : "#000",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {option.toUpperCase()}
+                </button>
+              ))}
+            </div>
 
-        {/* Device List 设备列表 */}
-        {!loading &&
-          filtered.map((device) => (
-            <DeviceCard
-              key={device.deviceId}
-              device={device}
-              onClick={setSelectedDevice}
-            />
-          ))}
+            {/* Loading */}
+            {loading && <p>Loading...</p>}
 
-        {!loading && filtered.length === 0 && (
-          <p style={{ textAlign: "center", marginTop: "20px", color: "#777" }}>
-            No devices found.
-          </p>
+            {/* Device List */}
+            {!loading &&
+              filtered.map((device) => (
+                <DeviceCard
+                  key={device.deviceId}
+                  device={device}
+                  onClick={setSelectedDevice}
+                />
+              ))}
+
+            {!loading && filtered.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  color: "#777",
+                }}
+              >
+                No devices found.
+              </p>
+            )}
+          </>
         )}
       </div>
 
-      {/* Equipment/Device Details Panel设备详情面板 */}
+      {/* Device Details Panel */}
       {selectedDevice && (
         <div
           style={{
@@ -272,7 +292,7 @@ function Status() {
   );
 }
 
-/* ----------------------- 子组件 Child Component ：DeviceCard ----------------------- */
+/* ----------------------- Device Card Component ----------------------- */
 function DeviceCard({ device, onClick }) {
   return (
     <div
