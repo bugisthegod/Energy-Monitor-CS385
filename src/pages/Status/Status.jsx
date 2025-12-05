@@ -24,7 +24,10 @@ function formatDate(ts) {
 
 function Status() {
   const location = useLocation();
+
+  const [allDevices, setAllDevices] = useState([]);
   const [devices, setDevices] = useState([]);
+
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState("");
   const [search, setSearch] = useState("");
@@ -32,56 +35,52 @@ function Status() {
   const [dates, setDates] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
 
-  // ------------------ Fetch unique dates ------------------
+  // ------------------ Load ALL devices on first load ------------------
   useEffect(() => {
-    async function fetchDates() {
+    async function fetchAll() {
       setLoading(true);
       try {
-        const devicesRef = collection(db, "devices");
-        const snapshot = await getDocs(devicesRef);
-        const data = snapshot.docs.map((doc) => doc.data());
-        const dateSet = new Set(
-          data.map((device) => formatDate(device.lastUpdated))
-        );
-        const sortedDates = Array.from(dateSet).sort();
-        setDates(sortedDates);
-      } catch (error) {
-        console.error("Error fetching dates:", error);
+        const ref = collection(db, "devices");
+        const snapshot = await getDocs(ref);
+        const data = snapshot.docs.map((doc) => ({
+          deviceId: doc.id,
+          ...doc.data(),
+        }));
+
+        setAllDevices(data);
+
+        // Prepare unique available dates
+        const dateSet = new Set(data.map((d) => formatDate(d.lastUpdated)));
+        setDates(Array.from(dateSet).sort());
+      } catch (e) {
+        console.error("Error loading devices:", e);
       }
       setLoading(false);
     }
-    fetchDates();
+
+    fetchAll();
   }, []);
 
-  // ------------------ Fetch devices for selected date ------------------
+  // ------------------ Apply date filtering ------------------
   useEffect(() => {
-    if (!selectedDate) return;
-    async function fetchDevicesByDate() {
-      setLoading(true);
-      try {
-        const devicesRef = collection(db, "devices");
-        const snapshot = await getDocs(devicesRef);
-        const data = snapshot.docs
-          .map((doc) => ({ deviceId: doc.id, ...doc.data() }))
-          .filter((device) => formatDate(device.lastUpdated) === selectedDate);
-        setDevices(data);
-      } catch (error) {
-        console.error("Error fetching devices:", error);
-        setDevices([]);
-      }
-      setLoading(false);
+    if (selectedDate === "") {
+      // No date selected → show ALL devices
+      setDevices(allDevices);
+    } else {
+      // Filter by selected date
+      const filtered = allDevices.filter(
+        (d) => formatDate(d.lastUpdated) === selectedDate
+      );
+      setDevices(filtered);
     }
-    fetchDevicesByDate();
-  }, [selectedDate]);
+  }, [selectedDate, allDevices]);
 
   // ------------------ Status & Search Filtering ------------------
   const filtered = devices
-    .filter((device) =>
-      statusFilter === "all" ? true : device.powerStatus === statusFilter
+    .filter((d) =>
+      statusFilter === "all" ? true : d.powerStatus === statusFilter
     )
-    .filter((device) =>
-      device.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((d) => d.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // ------------------ Count devices per status ------------------
@@ -159,75 +158,66 @@ function Status() {
           }}
         >
           <option value="">Please select a date</option>
-          {dates.map((date) => (
-            <option key={date} value={date}>
-              {date}
+          {dates.map((d) => (
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </select>
 
-        {/* Only show status counts and buttons if a date is selected */}
-        {selectedDate && (
-          <>
-            {/* Status Counts Display & Buttons */}
-            <div style={{ marginBottom: "15px" }}>
-              <div
-                style={{
-                  marginBottom: "8px",
-                  fontWeight: "600",
-                  color: "#555",
-                }}
-              >
-                Device Count: All ({countStatus.all}) | On ({countStatus.on}) |
-                Off ({countStatus.off})
-              </div>
-              {["all", "on", "off"].map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setStatusFilter(option)}
-                  style={{
-                    marginRight: "10px",
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    border: "none",
-                    cursor: "pointer",
-                    backgroundColor:
-                      statusFilter === option ? "#4caf50" : "#e0e0e0",
-                    color: statusFilter === option ? "#fff" : "#000",
-                    fontSize: "15px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {option.toUpperCase()}
-                </button>
-              ))}
-            </div>
+        {/* Status Counts ALWAYS visible */}
+        <div
+          style={{
+            marginBottom: "15px",
+            fontWeight: "600",
+            color: "#555",
+          }}
+        >
+          Device Count: All ({countStatus.all}) | On ({countStatus.on}) | Off (
+          {countStatus.off})
+        </div>
 
-            {/* Loading */}
-            {loading && <p>Loading...</p>}
+        {/* Filter Buttons */}
+        <div style={{ marginBottom: "15px" }}>
+          {["all", "on", "off"].map((option) => (
+            <button
+              key={option}
+              onClick={() => setStatusFilter(option)}
+              style={{
+                marginRight: "10px",
+                padding: "8px 16px",
+                borderRadius: "20px",
+                border: "none",
+                cursor: "pointer",
+                backgroundColor:
+                  statusFilter === option ? "#4caf50" : "#e0e0e0",
+                color: statusFilter === option ? "#fff" : "#000",
+                fontSize: "15px",
+                fontWeight: "600",
+              }}
+            >
+              {option.toUpperCase()}
+            </button>
+          ))}
+        </div>
 
-            {/* Device List */}
-            {!loading &&
-              filtered.map((device) => (
-                <DeviceCard
-                  key={device.deviceId}
-                  device={device}
-                  onClick={setSelectedDevice}
-                />
-              ))}
+        {/* Loading */}
+        {loading && <p>Loading...</p>}
 
-            {!loading && filtered.length === 0 && (
-              <p
-                style={{
-                  textAlign: "center",
-                  marginTop: "20px",
-                  color: "#777",
-                }}
-              >
-                No devices found.
-              </p>
-            )}
-          </>
+        {/* Device List */}
+        {!loading &&
+          filtered.map((device) => (
+            <DeviceCard
+              key={device.deviceId}
+              device={device}
+              onClick={setSelectedDevice}
+            />
+          ))}
+
+        {!loading && filtered.length === 0 && (
+          <p style={{ textAlign: "center", marginTop: "20px", color: "#777" }}>
+            No devices found.
+          </p>
         )}
       </div>
 
@@ -270,6 +260,7 @@ function Status() {
             <strong>Last Updated:</strong>{" "}
             {formatTimestamp(selectedDevice.lastUpdated)}
           </p>
+
           <button
             onClick={() => setSelectedDevice(null)}
             style={{
