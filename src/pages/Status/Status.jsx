@@ -2,29 +2,27 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Status.css";
 
-// 将 timestamp 转成 dd/mm/yy HH:MM:SS
+// 转换 timestamp
 function formatTimestamp(ts) {
   const d = new Date(ts);
-
-  // 补零函数
   const pad = (n) => n.toString().padStart(2, "0");
-
-  const day = pad(d.getDate());
-  const month = pad(d.getMonth() + 1);
-  const year = pad(d.getFullYear() % 100); // 取后两位
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  const seconds = pad(d.getSeconds());
-
-  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${String(
+    d.getFullYear()
+  ).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+    d.getSeconds()
+  )}`;
 }
 
+/* ---------------------------- 父组件 ---------------------------- */
 function Status() {
   const [devices, setDevices] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState("2025-01-01");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // 新增：选中设备 → 打开详情
+  const [selectedDevice, setSelectedDevice] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -38,7 +36,6 @@ function Status() {
       } catch (error) {
         console.log("Server offline -> using fallback.");
 
-        // ========= fallback 数据：新增 timestamp =========
         const fallback = {
           "2025-01-01": [
             {
@@ -102,25 +99,22 @@ function Status() {
     load();
   }, [selectedDate]);
 
-  // 搜索 + 状态过滤
   const filtered = devices
     .filter((device) => {
       const statusMatch =
         statusFilter === "all" ? true : device.powerStatus === statusFilter;
-
       const searchMatch = device.name
         .toLowerCase()
         .includes(search.toLowerCase());
-
       return statusMatch && searchMatch;
     })
-    .sort((a, b) => a.name.localeCompare(b.name)); // 按字母排序
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const dates = ["2025-01-01", "2025-01-02"];
 
   return (
     <div className="home-page">
-      {/* ★★★ 插入的导航栏 ★★★ */}
+      {/* 导航栏 */}
       <div className="navbar">
         <div className="nav-title">⚡ Energy Monitor</div>
         <div className="nav-tabs">
@@ -150,8 +144,8 @@ function Status() {
           </Link>
         </div>
       </div>
-      {/* ★★★ 导航栏结束 ★★★ */}
 
+      {/* 内容 */}
       <div style={{ padding: "20px" }}>
         <h2
           style={{ fontSize: "24px", fontWeight: "700", marginBottom: "20px" }}
@@ -223,56 +217,121 @@ function Status() {
 
         {/* 设备列表 */}
         {!loading &&
-          filtered.map((d) => (
-            <div
-              key={d.deviceId}
-              style={{
-                background: "#fff",
-                marginBottom: "15px",
-                padding: "18px",
-                borderRadius: "15px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {/* 图标
-              <div style={{ fontSize: "32px", marginRight: "15px" }}>
-                {d.icon}
-              </div> */}
-
-              {/* 内容 */}
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>
-                  {d.name}
-                </h3>
-
-                <div
-                  style={{ marginTop: "6px", fontSize: "14px", color: "#666" }}
-                >
-                  {formatTimestamp(d.lastUpdated)}
-                  <span
-                    style={{
-                      marginLeft: "10px", // 多一点间距
-                      color: d.powerStatus === "on" ? "#2ecc71" : "#e74c3c",
-                      fontWeight: "900", // 更粗
-                      fontSize: "20px", // 更大
-                      //textTransform: "uppercase", // 转大写，更醒目
-                    }}
-                  >
-                    {d.powerStatus}
-                  </span>
-                </div>
-              </div>
-            </div>
+          filtered.map((device) => (
+            <DeviceCard
+              key={device.deviceId}
+              device={device}
+              onClick={setSelectedDevice} // 子传父
+            />
           ))}
 
-        {/* 无结果 */}
         {!loading && filtered.length === 0 && (
           <p style={{ textAlign: "center", marginTop: "20px", color: "#777" }}>
             No devices found.
           </p>
         )}
+      </div>
+
+      {/* -------------------- 设备详情面板 -------------------- */}
+      {selectedDevice && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            width: "100%",
+            background: "#fff",
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+            borderTopLeftRadius: "18px",
+            borderTopRightRadius: "18px",
+            padding: "20px",
+            animation: "slideUp 0.25s ease",
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: "20px" }}>{selectedDevice.name}</h3>
+
+          <p style={{ marginTop: "10px", color: "#555" }}>
+            <strong>Type:</strong> {selectedDevice.type}
+          </p>
+
+          <p style={{ color: "#555" }}>
+            <strong>Status:</strong>{" "}
+            <span
+              style={{
+                color:
+                  selectedDevice.powerStatus === "on" ? "#2ecc71" : "#e74c3c",
+                fontWeight: "bold",
+              }}
+            >
+              {selectedDevice.powerStatus}
+            </span>
+          </p>
+
+          <p style={{ color: "#555" }}>
+            <strong>Current Power:</strong> {selectedDevice.currentPower} W
+          </p>
+
+          <p style={{ color: "#555" }}>
+            <strong>Last Updated:</strong>{" "}
+            {formatTimestamp(selectedDevice.lastUpdated)}
+          </p>
+
+          <button
+            onClick={() => setSelectedDevice(null)}
+            style={{
+              marginTop: "20px",
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              background: "#333",
+              color: "#fff",
+              border: "none",
+              fontSize: "16px",
+              cursor: "pointer",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ----------------------- 子组件：DeviceCard ----------------------- */
+function DeviceCard({ device, onClick }) {
+  return (
+    <div
+      onClick={() => onClick(device)}
+      style={{
+        background: "#fff",
+        marginBottom: "15px",
+        padding: "18px",
+        borderRadius: "15px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        display: "flex",
+        alignItems: "center",
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>
+          {device.name}
+        </h3>
+
+        <div style={{ marginTop: "6px", fontSize: "14px", color: "#666" }}>
+          {formatTimestamp(device.lastUpdated)}
+          <span
+            style={{
+              marginLeft: "10px",
+              color: device.powerStatus === "on" ? "#2ecc71" : "#e74c3c",
+              fontWeight: "900",
+              fontSize: "20px",
+            }}
+          >
+            {device.powerStatus}
+          </span>
+        </div>
       </div>
     </div>
   );
