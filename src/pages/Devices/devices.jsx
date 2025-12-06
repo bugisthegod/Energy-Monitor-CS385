@@ -1,38 +1,75 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate} from "react-router-dom";
+import { collection, getDocs } from "firebase/firestore";
+import { auth, db } from "../../fbconfig";
 import "./devices.css";
-
-import { useState } from "react";
 
 let nextId = 3; //starting id for new devices
 
 // import {deviceList} from "./deviceList.js"
 
-// lec 2-3 const myDevices = [
-//
-// ];
+  // const deviceList = [
+  //   { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH: 0 },
+  //   { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH: 0 },
+  // ];
 
-// original full device list
+function Devices() {
+  // After you fetch data and store it in state:
+  const [devices, setDevices] = useState([]);
 
-//map through deviceList to create JSX elements
-//  const deviceListJSX = deviceList.map((d, index) => (
-  //           < p key = { index}/>
-  //           <b>{d.name}</b> {d.location},  { d.kwH + "kwH"}
-  //           <button >
-  //         Delete
-  //         </button>
+  //to store user inputs for new device
+  const [newDeviceName, setNewDeviceName] = useState("");
+  const [newDeviceType, setNewDeviceType] = useState("");
+
+  //to store total power and loading state
+  const [totalPower, setTotalPower] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+
   
-  //         ));
-  
-  function setdevices() {
-    const removeSecondLast = () => {
-      if (items.length < 2) return; // nothing to remove
-      const indexToRemove = items.length - 2;
-      const updatedList = items.filter((_, index) => index !== indexToRemove);
-      setItems(updatedList);
+  // Fetch devices from Firebase
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "devices"));
+      const devicesData = [];
+
+      querySnapshot.forEach((doc) => {
+        devicesData.push({ id: doc.id, ...doc.data() });
+      });
+
+      setDevices(devicesData);
+
+      // Calculate total power from all devices
+      const total = devicesData.reduce(
+        (sum, device) => sum + (device.currentPower || 0),
+        0
+      );
+      setTotalPower(total);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching devices: ", error);
+      setLoading(false);
+    }
   };
-}
+  
+  
 
+
+  //filters out device to be deleted
+function handleDeleteDevice(id) {
+    const newList = devices.filter((device) => device.id !== id);
+    setDevices(newList);
+  }
+  
+  // add new device to deviceList
 function handleAddDevice() {
   const newDevice = {
     id: nextId++,
@@ -41,42 +78,74 @@ function handleAddDevice() {
     location: "Unknown",
     kwH: 0,
   };
-
-  //add new device to deviceList
-  // setDeviceList([...deviceList, newDevice]);
+ 
+  //add new device to current devices array
+  setDevices((previousDevices) => [...previousDevices, newDevice]);
 
   //clear input fields
   setNewDeviceName("");
   setNewDeviceType("");
 }
 
-function Devices() {
-  const deviceList = [
-    { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH: 0 },
-    { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH: 0 },
-  ];
+ // Icon mapping
+  const getDeviceIcon = (type) => {
+    const icons = {
+      air_conditioner: "🌡️",
+      refrigerator: "🧊",
+      tv: "📺",
+      washing_machine: "🧺",
+      lighting: "💡",
+      heater: "🔥",
+      microwave: "🍴",
+      computer: "💻",
+      dishwasher: "🍽️",
+    };
+    return icons[type] || "⚡";
+  };
+
+if (loading) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center" }}>
+        Loading devices...
+      </div>
+    );
+  }
+
   
-  //to store user inputs for new device
-  const [newDeviceName, setNewDeviceName] = useState("");
-  const [newDeviceType, setNewDeviceType] = useState("");
   return (
     <div className="devices">
-      <div class="navbar">
+      <div className="navbar">
         <h1> ⚡Energy Monitor </h1>
-        {/* <div class="nav-title">Energy Monitor2</div> */}
-        <div class="nav-tabs">
-          {/* <button>Home</button>
-        <button>Devices</button>
-        <button>Stats</button> */}
-          <div class="nav-tab"> Home </div>
-          <div class=" nav-tab active"> Devices </div>
-          <div class="nav-tab"> Stats </div>
-        </div>
-      </div>
+        <div className="nav-tabs">
+          <Link
+            to="/"
+            className={`nav-tab${location.pathname === "/" ? " active" : ""}`}
+          >
+            Home
+          </Link>
 
-      <div class="add-device">
+          <Link
+            to="/devices"
+            className={`nav-tab${location.pathname === "/devices" ? " active" : ""}`}
+          >
+            Devices
+          </Link>
+
+          <Link
+            to="/status"
+            className={`nav-tab${location.pathname === "/status" ? " active" : ""}`}
+          >
+            Status
+          </Link>
+      </div>
+    </div>
+
+      
+
+      <div className="add-device">
         <h2>Add New Device</h2>
-        <h2>Device Name</h2>
+        
+        <h3>Device Name</h3>
         <input
           type="text"
           placeholder="Device Name"
@@ -84,7 +153,7 @@ function Devices() {
           onChange={(e) => setNewDeviceName(e.target.value)}
         />
 
-        <h2>Device Type</h2>
+        <h3>Device Type</h3>
         <input
           type="text"
           placeholder="Device Type"
@@ -92,13 +161,27 @@ function Devices() {
           onChange={(e) => setNewDeviceType(e.target.value)}
         />
 
-        <button onClick={() => handleAddDevice}> Add Device </button>
+        <button onClick={() => handleAddDevice()}> Add Device </button>
 
-        <h2> </h2>
-        <h2> My Devices</h2>
-        {/* <>{deviceListJSX}</>; */}
+      
+        <div style={{marginBottom: "20px"}}> </div>
+        <h2> My Devices </h2>
+        {devices.length === 0 && <p>No devices added yet.</p>}
+        
+       {devices.map((device) => (
+        <div key={device.id} className="device-card"  >
+          <div className="device-icon">{getDeviceIcon(device.type)}</div>
+          <div className="device-info">
+            <div className="device-name">{device.name}</div>
+            <div className="device-type">{device.type}</div>
+          </div>
+          <div className="device-power">{device.kwH} kWh</div>
+          <button onClick={() => handleDeleteDevice(device.id)}>Delete</button>
+        </div>
+        ))}
+        
       </div>
-    </div>
+    </div> 
   );
 }
 
