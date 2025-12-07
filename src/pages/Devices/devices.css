@@ -5,7 +5,7 @@
 } //Navigation bar styling*/
 
 
-
+/* navigation bars */
 .navbar {
   background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
   padding: 35px 20px 15px;
@@ -43,6 +43,7 @@
   padding: 20px;
 }
 
+/* device card styling */
 .device-card {
   border: 1px solid #ccc;
   border-radius: 10px;
@@ -71,6 +72,7 @@
   background: #c0392b;
 }
 
+/* device icons */
 .device-icon {
   width: 50px;
   height: 50px;
@@ -83,6 +85,7 @@
   flex-shrink: 0;
 }
 
+/* style for add device card */
 .add-device-card {
   background: #f9f9f9;
   border-radius: 12px;
@@ -116,3 +119,22 @@
   background: #229954;
 }
 
+/* dropdown styles for device type selection */ */
+.type-dropdown {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 5px;
+  background: white;
+  max-height: 150px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.type-option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.type-option:hover {
+  background: #f0f0f0;
+}
