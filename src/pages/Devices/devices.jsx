@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate} from "react-router-dom";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp} from "firebase/firestore";
 import { auth, db } from "../../fbconfig";
 import "./devices.css";
 
@@ -8,10 +8,7 @@ let nextId = 3; //starting id for new devices
 
 // import {deviceList} from "./deviceList.js"
 
-  // const deviceList = [
-  //   { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH: 0 },
-  //   { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH: 0 },
-  // ];
+  
 
 function Devices() {
   // After you fetch data and store it in state:
@@ -93,7 +90,10 @@ async function handleAddDevice() {
       name: newDeviceName,
       type: newDeviceType,
       location: "Unknown",
-      kwH: 0,
+      W: 0, //generateRandomPower(newDeviceType),
+      // powerStatus: "off",
+      // createdAt: serverTimestamp(),
+      // lastUpdated: serverTimestamp(),
   };
  
   try {
@@ -175,9 +175,9 @@ function sortDevices(devicesArray) {
   } else if (sortOption === "name-desc") {
     sorted.sort((a, b) => b.name.localeCompare(a.name));
   } else if (sortOption === "power-asc") {
-    sorted.sort((a, b) => a.kwH - b.kwH);
+    sorted.sort((a, b) => a.W - b.W);
   } else if (sortOption === "power-desc") {
-    sorted.sort((a, b) => b.kwH - a.kwH);
+    sorted.sort((a, b) => b.W - a.W);
   }
 
   return sorted;
@@ -306,7 +306,7 @@ if (loading) {
             <div className="device-name">{device.name}</div>
             <div className="device-type">{device.type}</div>
           </div>
-          <div className="device-power">{device.kwH} kWh</div>
+          <div className="device-power">{device.W} W</div>
           <button onClick={() => handleDeleteDevice(device.id)}>Delete</button>
         </div>
         ))}
