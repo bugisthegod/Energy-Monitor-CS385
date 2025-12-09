@@ -132,12 +132,8 @@ function Status() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: "20px" }}>
-        <h2
-          style={{ fontSize: "24px", fontWeight: "700", marginBottom: "20px" }}
-        >
-          Device Status
-        </h2>
+      <div className="content">
+        <h2 className="section-title">Device Status</h2>
 
         {/* Search Box */}
         <input
@@ -175,7 +171,7 @@ function Status() {
           ))}
         </select>
 
-        {/* Status Counts ALWAYS visible */}
+        {/* Status Counts */}
         <div
           style={{
             marginBottom: "15px",
@@ -188,7 +184,7 @@ function Status() {
         </div>
 
         {/* Filter Buttons */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: "20px" }}>
           {["all", "on", "off"].map((option) => (
             <button
               key={option}
