@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate} from "react-router-dom";
-import { collection, getDocs, addDoc } from "firebase/firestore";
-import { auth, db } from "../../fbconfig";
+import { collection, doc, updateDoc, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../fbconfig";
 import "./devices.css";
+import { generateRandomPower } from "./devicePowerRange";
 
 let nextId = 3; //starting id for new devices
 
 // import {deviceList} from "./deviceList.js"
 
-  // const deviceList = [
-  //   { id: 1, name: "Fridge", location: "Kitchen", type: "Fridge", kwH: 0 },
-  //   { id: 2, name: "Lamp", location: "Living Room", type: "Lamp", kwH: 0 },
-  // ];
 
 function Devices() {
   // After you fetch data and store it in state:
@@ -35,10 +32,10 @@ function Devices() {
 
   // device types for dropdown filter
   const deviceTypes = [
-    "air conditioner",
+    "air_conditioner",
     "refrigerator",
     "tv",
-    "washing machine",
+    "washing_machine",
     "lighting",
     "heater",
     "microwave",
@@ -76,7 +73,29 @@ function Devices() {
     }
   };
   
-  
+//   //toggle power status of device
+// async function togglePower(id, currentStatus) {
+//   const device = devices.find(d => d.id === id); 
+//   if (!device) return;
+
+//   const docRef = doc(db, "devices", id);
+
+//   const newPower = !currentStatus ? generateRandomPower(device.type) : 0;
+
+//   await updateDoc(docRef, {
+//     powerStatus: !currentStatus,
+//     kwH: newPower,
+//     lastUpdated: serverTimestamp()
+//   });
+
+//   setDevices(prev =>
+//     prev.map(d =>
+//       d.id === id
+//         ? { ...d, powerStatus: !currentStatus, kwH: newPower }
+//         : d
+//     )
+//   );
+// }
 
 
   //filters out device to be deleted
@@ -93,8 +112,11 @@ async function handleAddDevice() {
       name: newDeviceName,
       type: newDeviceType,
       location: "Unknown",
-      kwH: 0,
-  };
+      powerStatus: false,
+      kwH: generateRandomPower(newDeviceType),
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp(),
+    };
  
   try {
     // save to Firebase
@@ -223,7 +245,7 @@ if (loading) {
     </div>
 
       
-
+      {/* add device section */}
       <div className="add-device"> 
         <h2>Add New Device</h2>
         
@@ -298,15 +320,17 @@ if (loading) {
       </div>
 
 
-        {/* Display filtered and sorted devices */}
+        {/* Display filtered and sorted devices in cards */} 
        {sortDevices(filterDevices(devices)).map((device) => (
         <div key={device.id} className="device-card"  >
           <div className="device-icon">{getDeviceIcon(device.type)}</div>
           <div className="device-info">
             <div className="device-name">{device.name}</div>
-            <div className="device-type">{device.type}</div>
+            <div className="device-type">{device.type} {device.createdAt} </div>
           </div>
-          <div className="device-power">{device.kwH} kWh</div>
+          <div className="device-power">{device.kwH} kwH</div>
+          {/* <button onClick={() => togglePower(device.id, device.powerStatus)}>
+          {device.powerStatus ? "On" : "Off"} </button> */}
           <button onClick={() => handleDeleteDevice(device.id)}>Delete</button>
         </div>
         ))}
@@ -317,3 +341,4 @@ if (loading) {
 }
 
 export default Devices;
+

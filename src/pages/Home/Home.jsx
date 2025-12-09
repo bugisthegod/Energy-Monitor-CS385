@@ -160,7 +160,8 @@ function Home() {
                       marginTop: "5px",
                     }}
                   >
-                    {device.powerStatus?.toUpperCase()}
+                    {device.powerStatus}
+                    {/* {device.powerStatus?.toUpperCase()} */}
                   </div>
                 </div>
                 <div className="device-power">{device.currentPower} W</div>
