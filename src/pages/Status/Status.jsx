@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Status.css";
-import { db } from "../../fbconfig";
-import { collection, getDocs } from "firebase/firestore";
+import { auth, db } from "../../fbconfig";
+import { signOut } from "firebase/auth";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 
 // Convert timestamp to DD/MM/YY HH:MM:SS
 function formatTimestamp(ts) {
@@ -24,6 +25,7 @@ function formatDate(ts) {
 
 function Status() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [allDevices, setAllDevices] = useState([]);
   const [devices, setDevices] = useState([]);
@@ -35,6 +37,11 @@ function Status() {
   const [dates, setDates] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
 
+  const handleLogout = () => {
+    signOut(auth);
+    navigate("/login");
+  };
+
   // ------------------ Load ALL devices on first load ------------------
   useEffect(() => {
     async function fetchAll() {
@@ -43,7 +50,7 @@ function Status() {
         const ref = collection(db, "devices");
         const snapshot = await getDocs(ref);
         const data = snapshot.docs.map((doc) => ({
-          deviceId: doc.id,
+          firestoreDocId: doc.id,
           ...doc.data(),
         }));
 
@@ -118,6 +125,9 @@ function Status() {
           >
             Status
           </Link>
+          <button onClick={handleLogout} className="nav-tab logout-btn">
+            Logout
+          </button>
         </div>
       </div>
 
@@ -285,6 +295,27 @@ function Status() {
 
 /* ----------------------- Device Card Component ----------------------- */
 function DeviceCard({ device, onClick }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const togglePowerStatus = async (e) => {
+    e.stopPropagation();
+    setIsUpdating(true);
+    try {
+      const deviceRef = doc(db, "devices", device.firestoreDocId);
+      const newStatus = device.powerStatus === "on" ? "off" : "on";
+      await updateDoc(deviceRef, {
+        powerStatus: newStatus,
+      });
+      // Update local state
+      device.powerStatus = newStatus;
+    } catch (error) {
+      console.error("Error updating power status:", error);
+      alert(`Failed to update device: ${error.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div
       onClick={() => onClick(device)}
@@ -317,6 +348,23 @@ function DeviceCard({ device, onClick }) {
           </span>
         </div>
       </div>
+      <button
+        onClick={togglePowerStatus}
+        disabled={isUpdating}
+        style={{
+          padding: "10px 20px",
+          borderRadius: "8px",
+          border: "none",
+          cursor: isUpdating ? "not-allowed" : "pointer",
+          backgroundColor: device.powerStatus === "on" ? "#e74c3c" : "#2ecc71",
+          color: "#fff",
+          fontSize: "14px",
+          fontWeight: "600",
+          opacity: isUpdating ? 0.6 : 1,
+        }}
+      >
+        {isUpdating ? "..." : device.powerStatus === "on" ? "Turn Off" : "Turn On"}
+      </button>
     </div>
   );
 }
